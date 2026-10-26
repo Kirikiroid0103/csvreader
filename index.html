@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV Viewer</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="page-header">
+      <div>
+        <h1>CSV Viewer</h1>
+        <p class="subtitle">
+          Загрузите CSV — страница определит типы столбцов, покажет сводку, аналитику, визуализацию и первые 20 строк.
+        </p>
+      </div>
+      <div class="badge" id="fileBadge">
+        Файл: <strong id="fileName">не выбран</strong>
+      </div>
+    </header>
+
+    <section class="card upload-card">
+      <div class="dropzone" id="dropzone" aria-label="Зона загрузки CSV">
+        <div class="dropzone-title">Перетащите CSV сюда</div>
+        <p class="dropzone-text">
+          или выберите файл вручную. Поддерживаются .csv, .txt, .tsv.
+          Разделители: запятая, точка с запятой, табуляция.
+        </p>
+        <div class="actions">
+          <label class="file-btn" for="fileInput">Выбрать файл</label>
+          <button class="secondary" id="loadSampleBtn" type="button">Загрузить пример</button>
+        </div>
+        <input type="file" id="fileInput" accept=".csv,.txt,.tsv,text/csv,text/plain" />
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <main id="results" hidden>
+      <section class="panel section">
+        <h2>Столбцы и типы</h2>
+        <div class="column-list" id="columnList"></div>
+      </section>
+
+      <section class="panel section">
+        <h2>Сводка о датасете</h2>
+        <div class="stats" id="stats"></div>
+      </section>
+
+      <section class="panel section">
+        <h2>Фильтры</h2>
+        <div class="filter-row">
+          <label class="filter-field">
+            <span>Категориальный столбец</span>
+            <select id="filterCatColumn"><option value="">— не выбран —</option></select>
+          </label>
+          <label class="filter-field">
+            <span>Значение</span>
+            <select id="filterCatValue"><option value="">— все —</option></select>
+          </label>
+          <label class="filter-field">
+            <span>Числовой столбец</span>
+            <select id="filterNumColumn"><option value="">— не выбран —</option></select>
+          </label>
+          <label class="filter-field">
+            <span>От</span>
+            <input type="number" id="filterNumMin" step="any" placeholder="мин" />
+          </label>
+          <label class="filter-field">
+            <span>До</span>
+            <input type="number" id="filterNumMax" step="any" placeholder="макс" />
+          </label>
+          <button class="secondary" id="resetFiltersBtn" type="button">Сбросить фильтры</button>
+        </div>
+        <div class="filter-status" id="filterStatus">Фильтры не применены.</div>
+      </section>
+
+      <section class="panel section">
+        <h2>Аналитика по столбцам</h2>
+        <div class="analytics-grid" id="analyticsGrid"></div>
+      </section>
+
+      <section class="panel section viz-section">
+        <h2>Визуализация</h2>
+
+        <!-- Гистограмма: контролы + график -->
+        <div class="viz-block">
+          <div class="viz-block-controls">
+            <label class="viz-control">
+              <span>Гистограмма: числовой столбец</span>
+              <select id="vizHistColumn"></select>
+            </label>
+          </div>
+          <div class="viz-chart-card">
+            <h3 id="histTitle">Гистограмма</h3>
+            <div class="chart-scroll">
+              <canvas id="histCanvas" width="960" height="360"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Круговая диаграмма: контролы + график -->
+        <div class="viz-block">
+          <div class="viz-block-controls">
+            <label class="viz-control">
+              <span>Круговая диаграмма: категориальный столбец</span>
+              <select id="vizPieColumn"></select>
+            </label>
+          </div>
+          <div class="viz-chart-card">
+            <h3 id="pieTitle">Круговая диаграмма</h3>
+            <div class="chart-scroll">
+              <canvas id="pieCanvas" width="960" height="360"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scatter: контролы + график -->
+        <div class="viz-block">
+          <div class="viz-block-controls scatter-controls">
+            <label class="viz-control">
+              <span>Scatter: X</span>
+              <select id="vizScatterX"></select>
+            </label>
+            <label class="viz-control">
+              <span>Scatter: Y</span>
+              <select id="vizScatterY"></select>
+            </label>
+          </div>
+          <div class="viz-chart-card">
+            <h3 id="scatterTitle">Диаграмма рассеяния</h3>
+            <div class="chart-scroll">
+              <canvas id="scatterCanvas" width="960" height="360"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel section">
+        <h2>Первые 20 строк</h2>
+        <div class="table-wrap" id="tableWrap"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      Клиентская обработка: HTML, CSS и JavaScript. Данные не покидают браузер.
+    </footer>
+  </div>
+
+  <!--
+    Порядок скриптов важен:
+    1) data.js — парсинг CSV и определение типов;
+    2) analytics.js — расчёт метрик;
+    3) charts.js — отрисовка визуализаций;
+    4) app.js — состояние приложения, события и сборка интерфейса.
+  -->
+  <script src="js/data.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
