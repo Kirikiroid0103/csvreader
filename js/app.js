@@ -107,8 +107,11 @@ function loadFile(file) {
     try {
       const text = String(reader.result || '');
       const parsed = parseCSV(text);
-      if (!parsed.headers.length) {
-        setStatus('Файл пуст или не содержит заголовков', 'error');
+
+      // Валидация: пустой файл, битый CSV, отсутствие числовых столбцов, текст вместо чисел
+      const validation = validateCSV(text, parsed);
+      if (!validation.ok) {
+        setStatus(validation.errors.join(' '), 'error');
         return;
       }
 
@@ -119,7 +122,10 @@ function loadFile(file) {
       state.filteredRows = [...state.rows];
 
       fileNameEl.textContent = file.name;
-      setStatus(`Загружено строк: ${state.rows.length}`, 'success');
+      const warnSuffix = validation.warnings.length
+        ? ` ⚠ ${validation.warnings.join(' ')}`
+        : '';
+      setStatus(`Загружено строк: ${state.rows.length}.${warnSuffix}`, 'success');
 
       renderAll();
     } catch (err) {
@@ -139,8 +145,11 @@ function loadSample() {
     })
     .then((text) => {
       const parsed = parseCSV(text);
-      if (!parsed.headers.length) {
-        setStatus('Файл пуст или не содержит заголовков', 'error');
+
+      // Валидация: пустой файл, битый CSV, отсутствие числовых столбцов, текст вместо чисел
+      const validation = validateCSV(text, parsed);
+      if (!validation.ok) {
+        setStatus(validation.errors.join(' '), 'error');
         return;
       }
 
@@ -151,7 +160,10 @@ function loadSample() {
       state.filteredRows = [...state.rows];
 
       fileNameEl.textContent = 'sales_data.csv (пример)';
-      setStatus(`Загружено строк: ${state.rows.length}`, 'success');
+      const warnSuffix = validation.warnings.length
+        ? ` ⚠ ${validation.warnings.join(' ')}`
+        : '';
+      setStatus(`Загружено строк: ${state.rows.length}.${warnSuffix}`, 'success');
       renderAll();
     })
     .catch((err) => {
@@ -264,6 +276,15 @@ function renderAnalytics() {
     return;
   }
 
+  // Нет данных — показываем сообщение об ошибке вместо аналитики
+  if (!state.filteredRows.length) {
+    const msg = state.rows.length
+      ? 'Нет данных для аналитики: все строки отфильтрованы. Измените или сбросьте фильтры.'
+      : 'Нет данных для аналитики: файл не содержит строк.';
+    analyticsGridEl.innerHTML = `<div class="empty error-msg">${msg}</div>`;
+    return;
+  }
+
   const cards = state.headers.map((header, idx) => {
     const type = state.columnTypes[header] || 'mixed';
     const values = state.filteredRows.map((r) => r[idx]);
@@ -287,8 +308,10 @@ function renderAnalytics() {
 
     if (type === 'categorical') {
       const stats = computeCategoricalStats(values);
-      const maxCount = stats.top5.length ? Math.max(...stats.top5.map(([, c]) => c)) : 1;
-      const top = stats.top5
+      // Все уникальные значения (не только топ-5), отсортированные по частоте
+      const allValues = stats.frequencies || stats.top5;
+      const maxCount = allValues.length ? Math.max(...allValues.map(([, c]) => c)) : 1;
+      const top = allValues
         .map(
           ([value, count]) => `
             <div class="top-item">

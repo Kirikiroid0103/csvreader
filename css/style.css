@@ -366,6 +366,9 @@ input[type="number"]:focus {
 }
 
 .top-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
   margin-top: 10px;
   display: flex;
   flex-direction: column;
@@ -632,4 +635,16 @@ td.row-index {
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25);
   max-width: 260px;
   white-space: nowrap;
+}
+
+
+/* Сообщение об ошибке в аналитике */
+.error-msg {
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
 }

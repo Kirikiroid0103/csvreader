@@ -166,6 +166,8 @@ function computeCategoricalStats(values) {
   const unique = countUnique(values);
   const total = values.length - missing;
   const top5 = topFrequencies(values, 5).map((item) => [item.value, item.count]);
+  // Все уникальные значения, отсортированные по частоте (для прокручиваемого списка)
+  const frequencies = topFrequencies(values, Infinity).map((item) => [item.value, item.count]);
 
-  return { unique, missing, total, top5 };
+  return { unique, missing, total, top5, frequencies };
 }
