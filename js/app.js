@@ -37,6 +37,9 @@ const filterCatValue = document.getElementById('filterCatValue');
 const filterNumColumn = document.getElementById('filterNumColumn');
 const filterNumMin = document.getElementById('filterNumMin');
 const filterNumMax = document.getElementById('filterNumMax');
+const filterDateColumn = document.getElementById('filterDateColumn');
+const filterDateMin = document.getElementById('filterDateMin');
+const filterDateMax = document.getElementById('filterDateMax');
 
 // Визуализация
 const vizHistColumn = document.getElementById('vizHistColumn');
@@ -76,6 +79,68 @@ function toNumber(value) {
   const num = Number(normalized);
   return Number.isFinite(num) ? num : null;
 }
+
+/**
+ * Парсит строку в Date. Поддерживает ISO, DD.MM.YYYY, текстовые месяцы и т.д.
+ * Возвращает null, если значение не похоже на дату.
+ */
+function parseDateValue(value) {
+  if (value === null || value === undefined) return null;
+  const v = String(value).trim();
+  if (!v) return null;
+
+  // ISO: YYYY-MM-DD (с возможной частью времени)
+  let m = v.match(/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/);
+  if (m) {
+    const d = new Date(v.replace(' ', 'T'));
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // DD.MM.YYYY / DD/MM/YYYY / DD-MM.YYYY
+  m = v.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})([ T]\d{2}:\d{2}(:\d{2})?)?$/);
+  if (m) {
+    const [, dd, mm, yyyy, time] = m;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (time) {
+      const t = time.trim().match(/\d{2}:\d{2}(:\d{2})?/);
+      if (t) {
+        d.setHours(Number(t[0].slice(0, 2)), Number(t[0].slice(3, 5)), t[2] ? Number(t[2].slice(3, 5)) : 0);
+      }
+    }
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // Текстовые месяцы: "15 января 2023" / "Jan 15, 2023"
+  const monthsRu = {
+    'январь': 0, 'января': 0, 'февраль': 1, 'февраля': 1, 'март': 2, 'марта': 2,
+    'апрель': 3, 'апреля': 3, 'май': 4, 'мая': 4, 'июнь': 5, 'июня': 5,
+    'июль': 6, 'июля': 6, 'август': 7, 'августа': 7, 'сентябрь': 8, 'сентября': 8,
+    'октябрь': 9, 'октября': 9, 'ноябрь': 10, 'ноября': 10, 'декабрь': 11, 'декабря': 11
+  };
+  const monthsEn = {
+    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+  };
+  m = v.match(/^(\d{1,2})\s+([а-яёa-z]+)\s+(\d{4})$/i);
+  if (m) {
+    const month = monthsRu[m[2].toLowerCase()] ?? monthsEn[m[2].toLowerCase().slice(0, 3)];
+    if (month !== undefined) {
+      const d = new Date(Number(m[3]), month, Number(m[1]));
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+  }
+  m = v.match(/^([a-z]{3,9})\s+(\d{1,2}),\s+(\d{4})$/i);
+  if (m) {
+    const month = monthsEn[m[1].toLowerCase().slice(0, 3)];
+    if (month !== undefined) {
+      const d = new Date(Number(m[3]), month, Number(m[2]));
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+  }
+
+  return null;
+}
+
 
 function isMissing(value) {
   if (value === null || value === undefined) return true;
@@ -191,6 +256,9 @@ function resetApp() {
   filterNumColumn.innerHTML = '<option value="">— не выбран —</option>';
   filterNumMin.value = '';
   filterNumMax.value = '';
+  filterDateColumn.innerHTML = '<option value="">— не выбран —</option>';
+  filterDateMin.value = '';
+  filterDateMax.value = '';
 
   // Сброс визуализации
   vizHistColumn.innerHTML = '';
@@ -409,8 +477,15 @@ function populateFilterControls() {
     .map((h) => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`)
     .join('');
 
+  const dateOptions = state.headers
+    .filter((h) => state.columnTypes[h] === 'date')
+    .map((h) => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`)
+    .join('');
+
+
   filterCatColumn.innerHTML = `<option value="">— не выбран —</option>${catOptions}`;
   filterNumColumn.innerHTML = `<option value="">— не выбран —</option>${numOptions}`;
+  filterDateColumn.innerHTML = `<option value="">— не выбран —</option>${dateOptions}`;
   filterCatValue.innerHTML = '<option value="">— все —</option>';
 }
 
@@ -472,6 +547,26 @@ function applyFilters() {
     }
   }
 
+  const dateCol = filterDateColumn.value;
+  const dateMinVal = filterDateMin.value;
+  const dateMaxVal = filterDateMax.value;
+  if (dateCol) {
+    const idx = state.headers.indexOf(dateCol);
+    if (idx >= 0) {
+      // Границы диапазона: от — начало дня, до — конец дня
+      const min = dateMinVal ? new Date(dateMinVal + 'T00:00:00') : null;
+      const max = dateMaxVal ? new Date(dateMaxVal + 'T23:59:59.999') : null;
+      result = result.filter((r) => {
+        const d = parseDateValue(r[idx]);
+        if (d === null) return false;
+        if (min !== null && d < min) return false;
+        if (max !== null && d > max) return false;
+        return true;
+      });
+    }
+  }
+
+
   state.filteredRows = result;
   filterStatusEl.textContent = `Показано строк: ${result.length} из ${state.rows.length}`;
 
@@ -486,6 +581,9 @@ function clearFilters() {
   filterNumColumn.value = '';
   filterNumMin.value = '';
   filterNumMax.value = '';
+  filterDateColumn.value = '';
+  filterDateMin.value = '';
+  filterDateMax.value = '';
 
   state.filteredRows = [...state.rows];
   filterStatusEl.textContent = 'Фильтры не применены.';
@@ -583,7 +681,7 @@ filterCatColumn.addEventListener('change', () => {
 });
 
 // Фильтры применяются автоматически при изменении любого параметра
-[filterCatColumn, filterCatValue, filterNumColumn, filterNumMin, filterNumMax].forEach((el) => {
+[filterCatColumn, filterCatValue, filterNumColumn, filterNumMin, filterNumMax, filterDateColumn, filterDateMin, filterDateMax].forEach((el) => {
   el.addEventListener('change', applyFilters);
   el.addEventListener('input', applyFilters);
 });

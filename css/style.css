@@ -294,7 +294,8 @@ input[type="file"] {
 }
 
 select,
-input[type="number"] {
+input[type="number"],
+input[type="date"] {
   width: 100%;
   background: #ffffff;
   border: 1px solid var(--border);
@@ -305,7 +306,8 @@ input[type="number"] {
 }
 
 select:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+input[type="date"]:focus {
   outline: none;
   border-color: var(--accent);
 }

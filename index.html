@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CSV Viewer</title>
+  <title>CSV Dashboard</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div class="container">
     <header class="page-header">
       <div>
-        <h1>CSV Viewer</h1>
+        <h1>CSV Dashboard</h1>
         <p class="subtitle">
           Загрузите CSV — страница определит типы столбцов, покажет сводку, аналитику, визуализацию и первые 20 строк.
         </p>
@@ -69,6 +69,18 @@
           <label class="filter-field">
             <span>До</span>
             <input type="number" id="filterNumMax" step="any" placeholder="макс" />
+          </label>
+          <label class="filter-field">
+            <span>Столбец с датой</span>
+            <select id="filterDateColumn"><option value="">— не выбран —</option></select>
+          </label>
+          <label class="filter-field">
+            <span>Дата от</span>
+            <input type="date" id="filterDateMin" />
+          </label>
+          <label class="filter-field">
+            <span>Дата до</span>
+            <input type="date" id="filterDateMax" />
           </label>
           <button class="secondary" id="resetFiltersBtn" type="button">Сбросить фильтры</button>
         </div>
